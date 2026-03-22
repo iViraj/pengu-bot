@@ -87,6 +87,6 @@ setInterval(() => {
   const msg = topics[Math.floor(Math.random() * topics.length)];
 
   channel.send(msg);
-}, 1000 * 60 * 8); // every 8 min
+}, 1000 * 60 * 60); // every 8 min
 
 client.login(process.env.DISCORD_TOKEN);
