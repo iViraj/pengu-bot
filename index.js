@@ -236,6 +236,83 @@ setInterval(() => {
   });
 }, 1000 * 60 * 10); // every 10 mins
 
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName } = interaction;
+  const config = loadConfig();
+  const guildId = interaction.guild.id;
+
+  // ===== HELP =====
+  if (commandName === "help") {
+    return interaction.reply({
+      content: "🐧 Commands: /setchannel /removechannel /listchannels /resetchannels",
+      ephemeral: true
+    });
+  }
+
+  // ===== SET CHANNEL =====
+  if (commandName === "setchannel") {
+    if (!interaction.member.permissions.has("Administrator")) {
+      return interaction.reply({ content: "admin only 😭", ephemeral: true });
+    }
+
+    const channel = interaction.options.getChannel("channel");
+
+    if (!config[guildId]) config[guildId] = { channels: [] };
+
+    if (!config[guildId].channels.includes(channel.id)) {
+      config[guildId].channels.push(channel.id);
+    }
+
+    saveConfig(config);
+
+    return interaction.reply(`added ${channel} 🐧`);
+  }
+
+  // ===== REMOVE CHANNEL =====
+  if (commandName === "removechannel") {
+    if (!interaction.member.permissions.has("Administrator")) {
+      return interaction.reply({ content: "admin only 😭", ephemeral: true });
+    }
+
+    const channel = interaction.options.getChannel("channel");
+
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return interaction.reply({ content: "nothing to remove 💀", ephemeral: true });
+    }
+
+    config[guildId].channels = config[guildId].channels.filter(id => id !== channel.id);
+
+    saveConfig(config);
+
+    return interaction.reply(`removed ${channel} 🧊`);
+  }
+
+  // ===== LIST =====
+  if (commandName === "listchannels") {
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return interaction.reply({ content: "no channels set 💀", ephemeral: true });
+    }
+
+    const list = config[guildId].channels.map(id => `<#${id}>`).join(", ");
+
+    return interaction.reply(`pengu active in:\n${list}`);
+  }
+
+  // ===== RESET =====
+  if (commandName === "resetchannels") {
+    if (!interaction.member.permissions.has("Administrator")) {
+      return interaction.reply({ content: "admin only 😭", ephemeral: true });
+    }
+
+    delete config[guildId];
+    saveConfig(config);
+
+    return interaction.reply("reset done 🧊");
+  }
+});
+
 // ===== ERROR HANDLING =====
 process.on("unhandledRejection", console.error);
 process.on("uncaughtException", console.error);
