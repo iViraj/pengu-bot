@@ -62,6 +62,51 @@ client.on("messageCreate", async (message) => {
 
   // ===== COMMANDS =====
 
+  //LIST CHANNEL
+  if (content === "!listchannels") {
+  const guildId = message.guild.id;
+  const config = loadConfig();
+
+  if (!config[guildId] || !config[guildId].channels.length) {
+    return message.reply("no channels set yet 💀");
+  }
+
+  const channelList = config[guildId].channels
+    .map(id => `<#${id}>`)
+    .join(", ");
+
+  return message.reply(`pengu is active in:\n${channelList}`);
+  }
+
+  //REMOVE CHANNEL
+if (content.startsWith("!removechannel")) {
+  if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+    return message.reply("admin only 😭");
+  }
+
+  const channels = message.mentions.channels;
+  const guildId = message.guild.id;
+  const config = loadConfig();
+
+  if (!config[guildId] || !config[guildId].channels.length) {
+    return message.reply("nothing to remove 💀");
+  }
+
+  if (!channels.size) {
+    return message.reply("mention channels to remove 🐧");
+  }
+
+  const existing = config[guildId].channels;
+
+  const updated = existing.filter(id => !channels.map(c => c.id).includes(id));
+
+  config[guildId].channels = updated;
+
+  saveConfig(config);
+
+  return message.reply("done. removed those channels 🧊");
+}
+  
   // HELP
   if (content === "!help") {
     return message.reply(`
