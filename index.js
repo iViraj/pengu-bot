@@ -240,5 +240,65 @@ setInterval(() => {
 process.on("unhandledRejection", console.error);
 process.on("uncaughtException", console.error);
 
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName } = interaction;
+  const config = loadConfig();
+  const guildId = interaction.guild.id;
+
+  if (commandName === "help") {
+    return interaction.reply({
+      content: "🐧 Commands: /setchannel /removechannel /listchannels /resetchannels",
+      ephemeral: true
+    });
+  }
+
+  if (commandName === "setchannel") {
+    const channel = interaction.options.getChannel("channel");
+
+    if (!config[guildId]) config[guildId] = { channels: [] };
+
+    if (!config[guildId].channels.includes(channel.id)) {
+      config[guildId].channels.push(channel.id);
+    }
+
+    saveConfig(config);
+
+    return interaction.reply(`added ${channel} 🐧`);
+  }
+
+  if (commandName === "removechannel") {
+    const channel = interaction.options.getChannel("channel");
+
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return interaction.reply({ content: "nothing to remove 💀", ephemeral: true });
+    }
+
+    config[guildId].channels = config[guildId].channels.filter(id => id !== channel.id);
+
+    saveConfig(config);
+
+    return interaction.reply(`removed ${channel} 🧊`);
+  }
+
+  if (commandName === "listchannels") {
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return interaction.reply({ content: "no channels set 💀", ephemeral: true });
+    }
+
+    const list = config[guildId].channels.map(id => `<#${id}>`).join(", ");
+
+    return interaction.reply(`pengu active in:\n${list}`);
+  }
+
+  if (commandName === "resetchannels") {
+    delete config[guildId];
+    saveConfig(config);
+
+    return interaction.reply("reset done 🧊");
+  }
+});
+
 // ===== LOGIN =====
 client.login(process.env.DISCORD_TOKEN);
