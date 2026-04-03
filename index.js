@@ -119,6 +119,26 @@ mention me or say "pengu" to talk 👀
 `);
   }
 
+  // RESET CHANNEL
+  if (content === "!resetchannels") {
+  if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+    return message.reply("admin only 😭");
+  }
+
+  const guildId = message.guild.id;
+  const config = loadConfig();
+
+  if (!config[guildId] || !config[guildId].channels.length) {
+    return message.reply("nothing to reset 💀");
+  }
+
+  delete config[guildId];
+
+  saveConfig(config);
+
+  return message.reply("done. pengu is removed from all channels 🧊 /n use !setchannel again to activate pengu");
+  }
+  
   // SET CHANNEL
   if (content.startsWith("!setchannel")) {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
