@@ -234,7 +234,7 @@ setInterval(() => {
       channel.send(msg);
     });
   });
-}, 1000 * 60 * 1000); // every 10 mins
+}, 1000 * 60 * 240); // every 10 mins
 
 // ===== ERROR HANDLING =====
 process.on("unhandledRejection", console.error);
