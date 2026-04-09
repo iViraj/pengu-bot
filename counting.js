@@ -38,9 +38,9 @@ if (lastUser === message.author.id) {
 
   message.reply(`${message.author} bro you can't count twice 💀 wait for someone else`);
 
-  data[guildId].count = 0;
-  data[guildId].lastUser = null;
-
+  data[guildId].count = number;
+  data[guildId].lastUser = message.author.id;
+  
   saveCount(data);
   return;
 }
