@@ -1,8 +1,8 @@
-import { handleCounting } from "./counting.js";
 import { Client, GatewayIntentBits, PermissionsBitField } from "discord.js";
 import axios from "axios";
 import dotenv from "dotenv";
 import fs from "fs";
+import { handleCounting, handleCountingCommands } from "./counting.js"; // ✅ NEW
 
 dotenv.config();
 
@@ -26,18 +26,6 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
-
-// ===== Counting =====
-const COUNTING_PATH = "./counting.json";
-
-function loadCounting() {
-  if (!fs.existsSync(COUNTING_PATH)) return {};
-  return JSON.parse(fs.readFileSync(COUNTING_PATH, "utf-8"));
-}
-
-function saveCounting(data) {
-  fs.writeFileSync(COUNTING_PATH, JSON.stringify(data, null, 2));
-}
 
 // ===== PERSONA =====
 const SYSTEM_PROMPT = `
@@ -69,93 +57,86 @@ client.once("clientReady", () => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-const countingData = loadCounting();
-handleCounting(message, countingData, saveCounting);
-
   const content = message.content.toLowerCase();
   const config = loadConfig();
   const guildId = message.guild?.id;
 
+  // ===== COUNTING SYSTEM =====
+  handleCounting(message); // ✅ NEW
+
   // ===== COMMANDS =====
 
-  //LIST CHANNEL
   if (content === "!listchannels") {
-  const guildId = message.guild.id;
-  const config = loadConfig();
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return message.reply("no channels set yet 💀");
+    }
 
-  if (!config[guildId] || !config[guildId].channels.length) {
-    return message.reply("no channels set yet 💀");
+    const channelList = config[guildId].channels
+      .map(id => `<#${id}>`)
+      .join(", ");
+
+    return message.reply(`pengu is active in:\n${channelList}`);
   }
 
-  const channelList = config[guildId].channels
-    .map(id => `<#${id}>`)
-    .join(", ");
+  if (content.startsWith("!removechannel")) {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      return message.reply("admin only 😭");
+    }
 
-  return message.reply(`pengu is active in:\n${channelList}`);
+    const channels = message.mentions.channels;
+
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return message.reply("nothing to remove 💀");
+    }
+
+    if (!channels.size) {
+      return message.reply("mention channels to remove 🐧");
+    }
+
+    const existing = config[guildId].channels;
+
+    // ✅ FIXED
+    const idsToRemove = [...channels.values()].map(c => c.id);
+
+    const updated = existing.filter(id => !idsToRemove.includes(id));
+
+    config[guildId].channels = updated;
+
+    saveConfig(config);
+
+    return message.reply("done. removed those channels 🧊");
   }
 
-  //REMOVE CHANNEL
-if (content.startsWith("!removechannel")) {
-  if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    return message.reply("admin only 😭");
-  }
-
-  const channels = message.mentions.channels;
-  const guildId = message.guild.id;
-  const config = loadConfig();
-
-  if (!config[guildId] || !config[guildId].channels.length) {
-    return message.reply("nothing to remove 💀");
-  }
-
-  if (!channels.size) {
-    return message.reply("mention channels to remove 🐧");
-  }
-
-  const existing = config[guildId].channels;
-
-  const updated = existing.filter(id => !channels.map(c => c.id).includes(id));
-
-  config[guildId].channels = updated;
-
-  saveConfig(config);
-
-  return message.reply("done. removed those channels 🧊");
-}
-  
-  // HELP
   if (content === "!help") {
     return message.reply(`
 🐧 **Pengu Commands**
 
 !setchannel → set channels where Pengu can chat  
+!removechannel → remove channels  
+!listchannels → list channels  
+!resetchannels → reset all channels  
 !help → show this  
 
 mention me or say "pengu" to talk 👀
 `);
   }
 
-  // RESET CHANNEL
   if (content === "!resetchannels") {
-  if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    return message.reply("admin only 😭");
+    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      return message.reply("admin only 😭");
+    }
+
+    if (!config[guildId] || !config[guildId].channels.length) {
+      return message.reply("nothing to reset 💀");
+    }
+
+    delete config[guildId];
+
+    saveConfig(config);
+
+    return message.reply("done. pengu is removed from all channels 🧊 \n use !setchannel again");
   }
 
-  const guildId = message.guild.id;
-  const config = loadConfig();
-
-  if (!config[guildId] || !config[guildId].channels.length) {
-    return message.reply("nothing to reset 💀");
-  }
-
-  delete config[guildId];
-
-  saveConfig(config);
-
-  return message.reply("done. pengu is removed from all channels 🧊 /n use !setchannel again to activate pengu");
-  }
-  
-  // SET CHANNEL
   if (content.startsWith("!setchannel")) {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
       return message.reply("admin only 😭");
@@ -174,6 +155,18 @@ mention me or say "pengu" to talk 👀
     saveConfig(config);
 
     return message.reply("done. pengu will chill there now 🐧");
+  }
+
+  // ===== STOP PENGU IN COUNTING CHANNEL =====
+  const countingData = fs.existsSync("./counting.json")
+    ? JSON.parse(fs.readFileSync("./counting.json", "utf-8"))
+    : {};
+
+  if (
+    countingData[guildId] &&
+    countingData[guildId].channel === message.channel.id
+  ) {
+    return;
   }
 
   // ===== RESTRICT TO CONFIG CHANNELS =====
@@ -213,7 +206,6 @@ mention me or say "pengu" to talk 👀
 
     if (!reply) return;
 
-    // Trim long replies
     if (reply.length > 200) {
       reply = reply.slice(0, 200);
     }
@@ -250,14 +242,17 @@ setInterval(() => {
       channel.send(msg);
     });
   });
-}, 1000 * 60 * 240); // every 10 mins
+}, 1000 * 60 * 240);
 
 // ===== ERROR HANDLING =====
 process.on("unhandledRejection", console.error);
 process.on("uncaughtException", console.error);
 
+// ===== INTERACTIONS =====
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
+  handleCountingCommands(interaction); // ✅ NEW
 
   const { commandName } = interaction;
   const config = loadConfig();
