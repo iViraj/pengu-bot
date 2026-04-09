@@ -29,7 +29,7 @@ export function handleCounting(message) {
   if (!/^\d+$/.test(content)) return;
 
   const number = parseInt(content);
-
+  const current = data[guildId].count || 0;
   const lastUser = data[guildId].lastUser || null;
 
 // ❌ Prevent same user twice
