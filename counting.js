@@ -30,7 +30,20 @@ export function handleCounting(message) {
 
   const number = parseInt(content);
 
-  const current = data[guildId].count || 0;
+  const lastUser = data[guildId].lastUser || null;
+
+// ❌ Prevent same user twice
+if (lastUser === message.author.id) {
+  message.react("❌");
+
+  message.reply(`${message.author} bro you can't count twice 💀 wait for someone else`);
+
+  data[guildId].count = 0;
+  data[guildId].lastUser = null;
+
+  saveCount(data);
+  return;
+}
 
   if (number === current + 1) {
     data[guildId].count = number;
