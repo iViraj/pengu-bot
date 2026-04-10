@@ -3,6 +3,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import fs from "fs";
 import { handleCounting, handleCountingCommands } from "./counting.js"; // ✅ NEW
+import { handleJoin, handleLeave, handleGreetingCommands } from "./greetings.js";
 
 dotenv.config();
 
@@ -52,6 +53,10 @@ Behavior:
 client.once("clientReady", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
+
+// ===== GREETINGS HANDLER ====
+client.on("guildMemberAdd", handleJoin);
+client.on("guildMemberRemove", handleLeave);
 
 // ===== MESSAGE HANDLER =====
 client.on("messageCreate", async (message) => {
@@ -252,6 +257,7 @@ process.on("uncaughtException", console.error);
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
+  handleGreetingCommands(interaction);
   handleCountingCommands(interaction); // ✅ NEW
 
   const { commandName } = interaction;
