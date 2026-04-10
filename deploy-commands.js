@@ -41,6 +41,43 @@ new SlashCommandBuilder()
 new SlashCommandBuilder()
   .setName("reset_counting")
   .setDescription("Reset counting sequence"),
+
+new SlashCommandBuilder()
+  .setName("setup_greeting")
+  .setDescription("Set greeting channel")
+  .addChannelOption(opt =>
+    opt.setName("channel").setDescription("Channel").setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName("set_greeting_message")
+  .setDescription("Set greeting message")
+  .addStringOption(opt =>
+    opt.setName("message").setDescription("Message").setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName("test_greeting")
+  .setDescription("Test greeting"),
+
+new SlashCommandBuilder()
+  .setName("setup_farewell")
+  .setDescription("Set farewell channel")
+  .addChannelOption(opt =>
+    opt.setName("channel").setDescription("Channel").setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName("set_farewell_message")
+  .setDescription("Set farewell message")
+  .addStringOption(opt =>
+    opt.setName("message").setDescription("Message").setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName("test_farewell")
+  .setDescription("Test farewell"),
+
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
